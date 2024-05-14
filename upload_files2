@@ -1,0 +1,57 @@
+
+/**
+ * string uploadFile() 多檔 PHP 檔案上傳
+ *
+ * @param files 透過 $_FILES 取得的 HTTP 檔案上傳的項目陣列
+ * @param allowExt 允許上傳檔案的擴展名，預設 'jpeg', 'jpg', 'gif', 'png'
+ * @param maxsize 上傳檔案容量大小限制，預設 2097152（2M * 1024 * 1024 = 2097152byte）
+ * @param flag 檢查是否為真實的圖片類型（只允許上傳圖片的話），true（預設）檢查；false 不檢查
+ * @param uploadPath 存放檔案的目錄，預設 uploads
+ *
+ * @return 回傳存放目錄 + md5 產生的檔案名稱 + 擴展名
+ */
+function uploadFile() {
+    $allowExt = array('jpg','jpeg','JPG','JPEG','gif','GIF','png','PNG','bmp','BMP');
+    $maxSize = 4096000; 
+    $flag = true; 
+    $mes = ''; // 存放錯誤訊息
+    // 檢查指定目錄是否存在，不存在就建立目錄
+    $uploadPath = 'img/';
+    if (!file_exists($uploadPath))
+        mkdir($uploadPath, 0777, true);  // 建立目錄
+  
+    $upload_images = [];
+    $total = count($_FILES['answer_img']['name']);  //共有多少上傳檔案
+    // Loop through each file
+    for ($i = 0; $i < $total; $i++) {
+        $file_name = $_FILES['answer_img']['name'][$i];
+        $file_tmp = $_FILES['answer_img']['tmp_name'][$i];
+        $file_size = $_FILES['answer_img']['size'][$i];
+        $file_error = $_FILES['answer_img']['error'][$i];
+        $file_ext = pathinfo($_FILES['answer_img']['name'][$i], PATHINFO_EXTENSION); // 取得上傳檔案的副檔名
+
+        // echo $file_name.$file_tmp.$file_size.$file_ext;
+        // 檢查是否有錯誤 是否為真實的圖片類型
+        if ($file_error === 0 && $file_size<= $maxSize && in_array($file_ext, $allowExt )){// 檢查檔案大小，這裡預設 4MB /*@getimagesize($file_tmp)*/ 合法副檔名
+            
+            // 生成一個唯一的檔案名稱 
+            $re = make_code($length = 4);
+            $uniName = date("YmdHis") . "_". $re . ".".  $file_ext ;
+            $destination = $uploadPath . $uniName;
+            
+            // 移動檔案到目標目錄
+            if (@move_uploaded_file($file_tmp, $destination)) {
+                // 儲存上傳成功的檔案資訊
+                $upload_images[] = $destination;
+            } else {
+                throw new Exception("檔案移動失敗");
+            }
+        } else {
+            throw new Exception("檔案太大，請上傳小於 4MB 的檔案 或 副檔名錯誤");
+        }
+       
+    }
+    // var_dump($upload_images);
+    return implode(',', $upload_images); //return string
+}
+
